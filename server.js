@@ -2,6 +2,7 @@ var express = require('express');
 var passport = require('passport');
 var JwtStrategy = require('passport-jwt').Strategy,
     ExtractJwt = require('passport-jwt').ExtractJwt;
+var jwt = require('jwt-simple');
 var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 mongoose.connect('mongodb://localhost:27017/authapi-experiment');
@@ -30,46 +31,53 @@ passport.use(new JwtStrategy(opts, function(jwt_payload, done) {
 app.post('/api/user/create',
   function(req, res) {
     UserModel.findOne({ email: req.body.email }, function(err, user) {
-        if(user){
-          res.json({
-            mensagem: 'E-mail já existente',
+      if(err) return res.status(500).json({erro: err});
+      if(user){
+        res.json({
+          mensagem: 'E-mail já existente',
+        });
+      }else {
+          var user = new UserModel({
+              nome: req.body.nome,
+              email: req.body.email,
+              senha: req.body.senha,
+              telefones: req.body.telefones,
           });
-        }else {
-            var user = new UserModel({
-                nome: req.body.nome,
-                email: req.body.email,
-                senha: req.body.senha,
-                telefones: req.body.telefones,
-            });
-            user.save(function(error, user){
-                if(error) return console.error(error);
-                res.json({
-                  mensagem: 'Usuário criado com sucesso',
-                  user: user,
-                });
-            })
-        }
+          user.save(function(error, user){
+              if(error) return console.error(error);
+              res.json({
+                mensagem: 'Usuário criado com sucesso',
+                user: user,
+              });
+          })
+      }
     });
   });
 
 app.post('/api/user/login',
   function(req, res) {
     UserModel.findOne({ email: req.body.email }, function(err, user) {
-        if(user){
-          if(user.senha == req.body.senha){
-            res.json(user);
-          } else {
-            res.json({
-              mensagem: "Usuário e/ou senha inválidos",
-            })
-          }
-        }else {
-          res.json({
+      if(err) return res.status(500).json({erro: err});
+      if(user){
+        if(user.senha == req.body.senha){
+          const token = jwt.encode({ _id: user._id }, opts.secretOrKey);
+          res.json(Object.assign({}, {user}, {token}));
+        } else {
+          res.status(401).json({
             mensagem: "Usuário e/ou senha inválidos",
           })
         }
+      }else {
+        res.status(401).json({
+          mensagem: "Usuário e/ou senha inválidos",
+        })
+      }
     });
   });
 
+app.get('/api/user', passport.authenticate('jwt', { session: false }),
+  function(req, res) {
+    res.json(req.user);
+  });
 
 app.listen(3000);

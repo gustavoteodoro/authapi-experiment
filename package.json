@@ -24,8 +24,10 @@
     "ejs": "^2.3.3",
     "express": "^4.13.3",
     "express-session": "^1.11.3",
+    "jwt-simple": "^0.5.1",
     "mongoose": "^4.13.5",
     "morgan": "^1.6.1",
+    "nodemon": "^1.12.1",
     "passport": "^0.2.2",
     "passport-jwt": "^3.0.1",
     "passport-local": "^1.0.0"
